@@ -17,47 +17,66 @@ The primary objective of this project is to build an automated, reproducible com
 The pipeline follows a structured 5-step computational workflow:
 
 ### Step 1: Data Acquisition
-* Coordinates: Human *CFTR* gene on Chromosome 7 (GRCh38: `NC_000007.14:g.117480025-117668665`).
-* Input: ClinVar VCF datasets and sample target files containing known *CFTR* variants.
+* Coordinates: Human *CFTR* gene on Chromosome 7 (GRCh38: `NC_000007.14:g.117465784-117682387`).
+* Tools: Built using `cyvcf2` to extract high-confidence variant records.
+* Input: `clinvar.vcf.gz` raw variant call dataset.
+* Output: `acquired_data/cftr_clinvar.vcf` targeted gene slice.
 
 ### Step 2: Variant Annotation
-* Tools: SnpEff integration.
-* Added Context: Gene locations (exon, intron, UTRs), mutation types (missense, nonsense, frameshift), and protein-level changes.
+* Tools: `SnpEff` integration using `GRCh38.86` database models.
+* Added Context: Structural annotations (exon, intron, UTRs), mutation types (missense, nonsense, frameshift), and protein-level HGVS alterations.
+* Output: `annotated_data/cftr_clinvar_annotated.vcf`.
 
 ### Step 3: Database Integration (Cross referencing)
-* **ClinVar**: Extract reported clinical significance (Pathogenic, Benign, VUS).
-* **CFTR2**: Cross-reference variants with disease-specific clinical data.
-* **gnomAD**: Retrieve global Allele Frequencies ($AF$) to filter common polymorphisms ($AF < 0.01$).
-* **In Silico Predictors**: Fetch SIFT, PolyPhen-2, and CADD impact scores.
+Executed via `Scripts/Step3.py`:
+* ClinVar: Extract reported clinical significance (`Pathogenic`, `Likely Pathogenic`, `Benign`, `VUS`).
+* CFTR2: Cross-reference known variants against disease-causing clinical database entries.
+* gnomAD: Retrieve global Allele Frequencies (`AF`) to identify rare variants vs. common polymorphisms (`AF < 0.01`).
+* In Silico Predictors: Fetch pathogenicity scores from CADD PHRED (`CADD_PHRED >= 20.0`), SIFT, and PolyPhen-2.
+* Output: `Reports/scored_annotations.csv`.
 
 ### Step 4: Scoring Python Data Processing & Prioritization
-Executed via custom Python modules (`scripts/parsing.py`, `scripts/pipeline.py`):
-1. **Quality Filtering**: Retain high-confidence variant calls.
-2. **Frequency Filtering**: Exclude common benign variants ($AF > 0.01$).
-3. **Pathogenicity Prioritization**: Flag deleterious mutations co-predicted by SIFT/PolyPhen-2.
-4. **Therapeutic Mapping**: Map actionable variants to known CFTR modulators (e.g., Trikafta/Ivacaftor).
+Executed via `Scripts/Step4.py`:
+1. Quality & Frequency Filtering: Retain high-confidence calls and exclude common benign variants (`AF >= 0.01`).
+2. Multi-Factorial Rank Scoring: Assign priority rank scores based on `SnpEff` impact (`HIGH` = 4, `MODERATE` = 3), ClinVar/CFTR2 pathogenic confirmation (+3), CADD cutoff (+2), and SIFT/PolyPhen predictions (+1).
+3. Precision Drug Therapy Mapping: Match variants to targeted modulators including Trikafta (`F508del`), Kalydeco (`G551D`, `R117H`), and read-through therapies for nonsense stop-gain mutations (`G542X`).
+4. Output: `Reports/ranked_cftr_variants_final.csv`.
 
-### Step 5: Visualization & Final Reporting
-Executed via `scripts/visualiz.py`:
-* Bar charts of mutation distributions (Missense vs. Nonsense vs. Indels).
-* Protein domain mapping (Lollipop plots mapping Nucleotide Binding and Transmembrane Domains).
-* CADD pathogenicity score distribution plots.
-* Exported final ranked CSV output (`final_ranked_cftr_summary.csv`).
-
----
+### Step 5: Visualizations & Clinical Summary Export
+Executed via `Scripts/Step5.py`:
+1. Mutation Distribution: Generate `figures/1_mutation_types_barchart.png` showing proportions of missense, nonsense, indels, and splice variants.
+2. Domain Mapping: Generate `figures/2_cftr_domain_lollipop.png` mapping variant rank scores across *CFTR* protein domains (TMD1, NBD1, R Domain, TMD2, NBD2).
 
 ## Repository Structure
 
-```text
-├── CfTr.py                   # Master wrapper script executing end-to-end pipeline
-├── scripts/                  # Modular pipeline core scripts
-│   ├── parsing.py            # VCF reading and variant extraction module
-│   ├── pipeline.py           # Annotation parsing, scoring, and filtering script
-│   └── visualiz.py           # Plotting and summary visualization module
-├── cftr_test.vcf             # Sample VCF dataset for testing
-├── requirements.txt          # Python dependencies
-├── images/                   # Output visualization plots
+Variant-annotation-and-pipeline/
+├── acquired_data/
+│   ├── cftr_clinvar.vcf
+│   └── cftr_test.vcf
+├── annotated_data/
+│   ├── cftr_clinvar_annotated.vcf
+│   ├── cftr_testannotated.vcf
+│   ├── summary
+│   ├── summary.genes.txt
+│   ├── testresults
+│   └── testresults.genes.txt
+├── figures/
 │   ├── 1_mutation_types_barchart.png
 │   ├── 2_cftr_domain_lollipop.png
 │   └── 3_cadd_score_distribution.png
-└── README.md                 # Project documentation
+├── Reports/
+│   ├── final_ranked_cftr_summary.csv
+│   ├── ranked_cftr_variants_final.csv
+│   └── scored_annotations.csv
+├── Scripts/
+│   ├── Step1.py
+│   ├── Step2.txt
+│   ├── Step3.py
+│   ├── Step4.py
+│   └── Step5.py
+├── snpEff/
+├── .gitignore
+├── CFTR.py
+└── README.md
+4. Pathogenicity Metrics: Generate `figures/3_cadd_score_distribution.png` displaying CADD PHRED score density distributions.
+5. Summary Export: Output final clean clinical report to `results/final_ranked_cftr_summary.csv`.
