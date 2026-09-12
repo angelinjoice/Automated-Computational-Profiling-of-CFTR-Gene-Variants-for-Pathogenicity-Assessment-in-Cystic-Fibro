@@ -78,5 +78,4 @@ Variant-annotation-and-pipeline/
 ├── .gitignore
 ├── CFTR.py
 └── README.md
-4. Pathogenicity Metrics: Generate `figures/3_cadd_score_distribution.png` displaying CADD PHRED score density distributions.
-5. Summary Export: Output final clean clinical report to `results/final_ranked_cftr_summary.csv`.
+
