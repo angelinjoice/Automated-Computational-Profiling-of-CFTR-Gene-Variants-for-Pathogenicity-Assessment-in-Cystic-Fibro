@@ -5,7 +5,7 @@ from cyvcf2 import VCF, Writer
 
 input_vcf = "clinvar.vcf.gz"
 output_vcf = "cftr_clinvar.vcf"
-REGION = "7:117465784-117682387"
+REGION = "7:117,480,025 - 117,668,665"
 
 vcf = VCF(input_vcf)
 out_vcf = Writer(output_vcf, vcf)
